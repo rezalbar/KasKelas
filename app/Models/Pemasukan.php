@@ -11,16 +11,15 @@ class Pemasukan extends Model
 
     protected $table = 'pemasukan';
 
-    // 👇 TAMBAHKAN 'foto_bukti' DAN 'status' DI SINI 👇
+    // PERBAIKAN: Tambahkan 'foto_bukti' dan 'status'
     protected $fillable = [
-        'user_id',
-        'jumlah',
-        'tanggal',
-        'keterangan',
-        'foto_bukti', // <-- Penting buat upload
-        'status',     // <-- Penting buat pending/lunas
-    ];
-
+    'user_id',
+    'jumlah',
+    'tanggal',
+    'keterangan',
+    'foto_bukti', // Pastikan ini ada
+    'status',     // Pastikan ini ada
+];
     public function user()
     {
         return $this->belongsTo(User::class);

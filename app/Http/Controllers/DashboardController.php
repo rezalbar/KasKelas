@@ -11,13 +11,15 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // 1. Hitung Data dulu
-        $totalPemasukan = Pemasukan::sum('jumlah');
+        // 1. Hitung Data (Hanya yang LUNAS)
+        // Tambahkan ->where('status', 'lunas') agar uang pending tidak ikut terhitung
+        $totalPemasukan = Pemasukan::where('status', 'lunas')->sum('jumlah'); 
+        
         $totalPengeluaran = Pengeluaran::sum('jumlah');
         $saldo = $totalPemasukan - $totalPengeluaran;
         $jumlahSiswa = User::where('role', 'siswa')->count();
 
-        // 2. Kirim data ke View (Bagian ini PENTING, jangan sampai hilang!)
+        // 2. Kirim data ke View
         return view('dashboard', compact('totalPemasukan', 'totalPengeluaran', 'saldo', 'jumlahSiswa'));
     }
 }

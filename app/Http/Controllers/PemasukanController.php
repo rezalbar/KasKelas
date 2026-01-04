@@ -11,7 +11,7 @@ class PemasukanController extends Controller
     public function index()
     {
         $siswa = User::where('role', 'siswa')->get();
-        // Urutkan status: Pending dulu, baru Lunas
+        // Urutkan biar yang butuh tindakan (Pending) ada di paling atas
         $pemasukan = Pemasukan::with('user')
                     ->orderByRaw("FIELD(status, 'pending', 'lunas')")
                     ->orderBy('created_at', 'desc')
@@ -20,7 +20,7 @@ class PemasukanController extends Controller
         return view('pemasukan', compact('siswa', 'pemasukan'));
     }
 
-    // Input Tunai oleh Admin
+    // 1. INPUT TUNAI (ADMIN) -> PASTI LUNAS
     public function store(Request $request)
     {
         $request->validate([
@@ -29,19 +29,19 @@ class PemasukanController extends Controller
             'tanggal' => 'required|date',
         ]);
 
-        // JURUS PAKSA: Pakai new object biar status 'lunas' pasti masuk
+        // Ganti create() dengan new Pemasukan() biar lebih aman
         $pemasukan = new Pemasukan();
         $pemasukan->user_id = $request->user_id;
         $pemasukan->jumlah = $request->jumlah;
         $pemasukan->tanggal = $request->tanggal;
         $pemasukan->keterangan = $request->keterangan;
-        $pemasukan->status = 'lunas'; // Admin = Langsung Lunas
+        $pemasukan->status = 'lunas'; // <--- ADMIN PASTI LUNAS
         $pemasukan->save();
 
         return back()->with('success', 'Pemasukan tunai berhasil dicatat!');
     }
 
-    // Input Transfer oleh Siswa
+    // 2. INPUT TRANSFER (SISWA) -> PASTI PENDING
     public function storeTransfer(Request $request)
     {
         $request->validate([
@@ -54,26 +54,24 @@ class PemasukanController extends Controller
         $namaFile = time() . '_' . $file->getClientOriginalName();
         $file->move(public_path('bukti_transfer'), $namaFile);
 
-        // JURUS PAKSA: Pakai new object biar status 'pending' PASTI masuk
+        // Ganti create() dengan new Pemasukan() biar status pending PASTI masuk
         $pemasukan = new Pemasukan();
-        $pemasukan->user_id = auth()->id(); // Pakai ID siswa yg login
+        $pemasukan->user_id = auth()->id();
         $pemasukan->jumlah = $request->jumlah;
         $pemasukan->tanggal = $request->tanggal;
         $pemasukan->keterangan = 'Transfer Bank';
         $pemasukan->foto_bukti = $namaFile;
-        $pemasukan->status = 'pending'; // <--- KITA PAKSA JADI PENDING
+        $pemasukan->status = 'pending'; // <--- SISWA PASTI PENDING
         $pemasukan->save();
 
         return back()->with('success', 'Bukti transfer terkirim! Menunggu verifikasi Admin.');
     }
 
-    // ACC Pembayaran
+    // 3. FITUR ACC (UBAH JADI LUNAS)
     public function approve($id)
     {
         $data = Pemasukan::findOrFail($id);
-        
-        // Update manual biar aman
-        $data->status = 'lunas'; 
+        $data->status = 'lunas'; // <--- SAHKAN JADI LUNAS
         $data->save();
         
         return back()->with('success', 'Pembayaran berhasil diverifikasi (Lunas)!');
